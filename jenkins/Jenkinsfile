@@ -19,9 +19,6 @@ pipeline {
                             sh '''
                                 go test -v -coverprofile=coverage.out ./... 2>&1 | tee /dev/stderr | go-junit-report > test-results.xml
                                 go tool cover -html=coverage.out -o coverage.html
-
-                                mkdir -p reports
-                                mv coverage.html reports/
                             '''
                         }
                     }
@@ -29,7 +26,7 @@ pipeline {
                         always {
                             junit 'bugtracker-backend/test-results.xml'
                             publishHTML target: [
-                                reportDir: 'bugtracker-backend/reports',
+                                reportDir: 'bugtracker-backend',
                                 reportFiles: 'coverage.html',
                                 reportName: 'Backend Coverage',
                                 keepAll: true,
@@ -50,8 +47,6 @@ pipeline {
                             sh '''
                                 npm install
                                 npm test
-                                mkdir -p reports
-                                mv coverage reports/
                             '''
                         }
                     }
@@ -59,7 +54,7 @@ pipeline {
                         always {
                             junit 'bugtracker-frontend/test-results.xml'
                             publishHTML target: [
-                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportDir: 'bugtracker-frontend/coverage',
                                 reportFiles: 'index.html',
                                 reportName: 'Frontend Coverage',
                                 keepAll: true,
