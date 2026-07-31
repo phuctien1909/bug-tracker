@@ -2,70 +2,78 @@ pipeline {
     agent any
 
     stages {
-        stage('Unit Tests - Backend') {
-            agent {
-                docker {
-                    image 'snakee/golang-junit:1.21'
-                    reuseNode true
-                    // image's HOME=/ and GOPATH=/go are root-owned; Jenkins runs us as uid 1000
-                    args '-e HOME=/tmp -e GOPATH=/tmp/go'
-                }
-            }
-            steps {
-                dir('bugtracker-backend') {
-                    // tee /dev/stderr: without it the pipe swallows go's errors and you get an empty report
-                    sh '''
-                        go test -v -coverprofile=coverage.out ./... 2>&1 | tee /dev/stderr | go-junit-report > test-results.xml
-                        go tool cover -html=coverage.out -o coverage.html
+        stage('Execute Unit Tests') {
+            parallel {
+                stage('Unit Tests - Backend') {
+                    agent {
+                        docker {
+                            image 'snakee/golang-junit:1.21'
+                            reuseNode true
+                            // image's HOME=/ and GOPATH=/go are root-owned; Jenkins runs us as uid 1000
+                            args '-e HOME=/tmp -e GOPATH=/tmp/go'
+                        }
+                    }
+                    steps {
+                        dir('bugtracker-backend') {
+                            // tee /dev/stderr: without it the pipe swallows go's errors and you get an empty report
+                            sh '''
+                                go test -v -coverprofile=coverage.out ./... 2>&1 | tee /dev/stderr | go-junit-report > test-results.xml
+                                go tool cover -html=coverage.out -o coverage.html
 
-                        mkdir -p reports
-                        mv coverage.html reports/
-                    '''
+                                mkdir -p reports
+                                mv coverage.html reports/
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            junit 'bugtracker-backend/test-results.xml'
+                            publishHTML target: [
+                                reportDir: 'bugtracker-backend/reports',
+                                reportFiles: 'coverage.html',
+                                reportName: 'Backend Coverage',
+                                keepAll: true,
+                                allowMissing: true
+                            ]
+                        }
+                    }
                 }
-            }
-            post {
-                always {
-                    junit 'bugtracker-backend/test-results.xml'
-                    publishHTML target: [
-                        reportDir: 'bugtracker-backend/reports',
-                        reportFiles: 'coverage.html',
-                        reportName: 'Backend Coverage',
-                        keepAll: true,
-                        allowMissing: true
-                    ]
+                stage('Unit Tests - Frontend') {
+                    agent {
+                        docker {
+                            image 'node:20-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        dir('bugtracker-frontend') {
+                            sh '''
+                                npm install
+                                npm test
+                                mkdir -p reports
+                                mv coverage reports/
+                            '''
+                        }
+                    }
+                    post {
+                        always {
+                            junit 'bugtracker-frontend/test-results.xml'
+                            publishHTML target: [
+                                reportDir: 'bugtracker-frontend/reports/coverage',
+                                reportFiles: 'index.html',
+                                reportName: 'Frontend Coverage',
+                                keepAll: true,
+                                allowMissing: true
+                            ]
+                        }
+                    }
                 }
             }
         }
-
-        stage('Unit Tests - Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                dir('bugtracker-frontend') {
-                    sh '''
-                        npm install
-                        npm test
-                        mkdir -p reports
-                        mv coverage reports/
-                    '''
-                }
-            }
-            post {
-                always {
-                    junit 'bugtracker-frontend/test-results.xml'
-                    publishHTML target: [
-                        reportDir: 'bugtracker-frontend/reports/coverage',
-                        reportFiles: 'index.html',
-                        reportName: 'Frontend Coverage',
-                        keepAll: true,
-                        allowMissing: true
-                    ]
-                }
-            }
+    }
+    post {
+        always {
+            cleanWs()
         }
     }
 }
