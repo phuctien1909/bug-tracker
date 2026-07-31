@@ -14,12 +14,25 @@ pipeline {
             steps {
                 dir('bugtracker-backend') {
                     // tee /dev/stderr: without it the pipe swallows go's errors and you get an empty report
-                    sh 'go test -v ./... 2>&1 | tee /dev/stderr | go-junit-report > test-results.xml'
+                    sh '''
+                        go test -v -coverprofile=coverage.out ./... 2>&1 | tee /dev/stderr | go-junit-report > test-results.xml
+                        go tool cover -html=coverage.out -o coverage.html
+
+                        mkdir -p reports
+                        mv coverage.html reports/
+                    '''
                 }
             }
             post {
                 always {
                     junit 'bugtracker-backend/test-results.xml'
+                    publishHTML target: [
+                        reportDir: 'bugtracker-backend/reports',
+                        reportFiles: 'coverage.html',
+                        reportName: 'Backend Coverage',
+                        keepAll: true,
+                        allowMissing: true
+                    ]
                 }
             }
         }
