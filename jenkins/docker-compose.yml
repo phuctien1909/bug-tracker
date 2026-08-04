@@ -1,5 +1,6 @@
 services:
   my-jenkins:
+    build: .
     image: my-jenkins
     container_name: my-jenkins
     restart: on-failure
