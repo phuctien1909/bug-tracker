@@ -14,4 +14,7 @@ RUN echo "deb [arch=$(dpkg --print-architecture) \
 
 RUN apt-get update && apt-get install -y docker-ce-cli
 
+# docker.sock on Docker Desktop is owned by root:root (GID 0); join it for socket access
+RUN usermod -aG root jenkins
+
 USER jenkins
