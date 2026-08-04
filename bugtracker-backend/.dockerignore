@@ -2,5 +2,10 @@
 # Ignore data directory
 **/data/ 
 # Ignore database file
-**/*.db 
+**/*.db
 fly.toml
+
+# Test artifacts regenerated every CI run — busts the COPY/build layer cache otherwise
+coverage.out
+coverage.html
+test-results.xml
