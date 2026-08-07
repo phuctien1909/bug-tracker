@@ -36,7 +36,7 @@ jobs:
           go test -v ./... 2>&1 | go-junit-report > test-results.xml
 
       - name: Publish Backend Test Results
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Backend Unit Tests Report
@@ -60,11 +60,16 @@ jobs:
          working-directory: ./bugtracker-frontend
          run: |
            npm ci
-           npm test
+           npm test | tee full_output.txt
 
+           echo "## Frontend Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+           echo '```' >> $GITHUB_STEP_SUMMARY
+           cat full_ouutput.txt >> $GITHUB_STEP_SUMMARY
+           echo '```' >> $GITHUB_STEP_SUMMARY
+          
        - name: Publish Frontend Test Results
-         uses: dorny/test-reporter@v2
-         if: always()
+         uses: dorny/test-reporter@v3
+         if: always() 
          with:
            name: Frontend Unit Tests Report
            path: bugtracker-frontend/test-results.xml
