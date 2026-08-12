@@ -129,10 +129,10 @@ jobs:
       - name: Launch Application
         run: |
           docker compose up -d --build
-          npx wait-on http://localhost:8081/api/health -t -30000
+          npx wait-port http://localhost:8081/api/health -t -30000
 
       - name: Run API Tests
         working-directory: ./tests-api
         run: |
-          npm in
+          npm ci
           npx playwright test
