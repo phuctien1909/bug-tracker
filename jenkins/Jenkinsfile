@@ -200,7 +200,7 @@ pipeline {
             }
         }
 
-        stage {
+        stage ('Post Deployment Tests') {
             when {
                 expression {
                     return env.GIT_BRANCH == 'origin/main'
